@@ -1249,13 +1249,13 @@ function calcs.offence(env, actor, activeSkill, skillLookupOnly)
 						break
 					end
 				end
-
 				-- calculate ratio of uptime versus downtime
 				output.IntimidatingUpTimeRatio = m_min((numIntimidatingExerts / output.Speed) / (output.IntimidatingCryCooldown + output.IntimidatingCryCastTime), 1.0)
 				exertedUptime = m_max(exertedUptime, output.IntimidatingUpTimeRatio)
 				-- intimidating cry guarantees double damage for its attacks; therefore, its hit effect
 				-- is calculated as the improvement over the non-intimidated double damage chance
 				output.IntimidatingHitEffect = 1 + (1 - output.DoubleDamageChance / 100) * output.IntimidatingUpTimeRatio
+
 			end
 		end
 		-- Rallying Cry Exerts Attacks
