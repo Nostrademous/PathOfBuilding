@@ -1249,8 +1249,7 @@ function calcs.offence(env, actor, activeSkill, skillLookupOnly)
 						break
 					end
 				end
-				-- Special case to handle Dominating Blow, which will have the Attack flag, but we don't want and can't have the calcs for the minion side
-				
+
 				-- calculate ratio of uptime versus downtime
 				output.IntimidatingUpTimeRatio = m_min((numIntimidatingExerts / output.Speed) / (output.IntimidatingCryCooldown + output.IntimidatingCryCastTime), 1.0)
 				exertedUptime = m_max(exertedUptime, output.IntimidatingUpTimeRatio)
