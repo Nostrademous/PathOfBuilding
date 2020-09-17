@@ -459,6 +459,13 @@ return {
 	AlternateTreePassiveSizes={
 	},
 	AlternateTreeVersions={
+		[1]={
+			list=false,
+			name="ConquerorType",
+			refTo="",
+			type="String",
+			width=150
+		}
 	},
 	Animation={
 		[1]={
