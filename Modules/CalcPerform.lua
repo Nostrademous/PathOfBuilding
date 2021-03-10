@@ -21,18 +21,18 @@ local tempTable1 = { }
 
 -- Identify the trigger action skill for trigger conditions, take highest Attack Per Second 
 local function findTriggerSkill(env, skill, source, triggerRate)
-	local uuid = cacheSkillUUID(skill)
-	if not GlobalCache.cachedData[uuid] then
-		calcs.buildActiveSkill(env.build, "CACHE", skill)
-		env.dontCache = true
+	local cachedData = getCachedData(skill, "CALCS")
+	if not cachedData then
+		calcs.buildActiveSkill(env.build, "CALCS", skill)
+		cachedData = getCachedData(skill, "CALCS")
 	end
 
-	if GlobalCache.cachedData[uuid] then
+	if cachedData then
 		-- Below code sets the trigger skill to highest APS skill it finds that meets all conditions
-		if not source and GlobalCache.cachedData[uuid].Speed then
-			return skill, GlobalCache.cachedData[uuid].Speed
-		elseif GlobalCache.cachedData[uuid].Speed and GlobalCache.cachedData[uuid].Speed > triggerRate then
-			return skill, GlobalCache.cachedData[uuid].Speed
+		if not source and cachedData.Speed then
+			return skill, cachedData.Speed
+		elseif cachedData.Speed and cachedData.Speed > triggerRate then
+			return skill, cachedData.Speed
 		end
 	end
 	return source, triggerRate
@@ -843,6 +843,15 @@ local function doActorMisc(env, actor)
 	end	
 end
 
+function calcs.perform(env, force)
+	local cachedData = getCachedData(env.player.mainSkill, env.mode)
+	if not cachedData or force then
+		calcs.performFull(env)
+	else
+		env = cachedData.Env
+	end
+end
+
 -- Finalises the environment and performs the stat calculations:
 -- 1. Merges keystone modifiers
 -- 2. Initialises minion skills
@@ -854,7 +863,7 @@ end
 -- 8. Processes buffs and debuffs
 -- 9. Processes charges and misc buffs (doActorMisc)
 -- 10. Calculates defence and offence stats (calcs.defence, calcs.offence)
-function calcs.perform(env)
+function calcs.performFull(env)
 	local modDB = env.modDB
 	local enemyDB = env.enemyDB
 
@@ -862,16 +871,21 @@ function calcs.perform(env)
 	env.keystonesAdded = { }
 	mergeKeystones(env)
 
+	ConPrintf("[calcs.performFull]: " .. env.mode .. " :: " .. cacheSkillUUID(env.player.mainSkill))
+
 	-- Build minion skills
 	for _, activeSkill in ipairs(env.player.activeSkillList) do
 		activeSkill.skillModList = new("ModList", activeSkill.baseSkillModList)
 		if activeSkill.minion then
-			if cacheSkillUUID(activeSkill) == cacheSkillUUID(env.player.mainSkill) then
-				activeSkill = env.player.mainSkill
+			local uuid = cacheSkillUUID(activeSkill)
+			if GlobalCache.minionSkills[uuid] then
+				activeSkill = GlobalCache.minionSkills[uuid].activeSkill
+			else
+				activeSkill.minion.modDB = new("ModDB")
+				activeSkill.minion.modDB.actor = activeSkill.minion
+				calcs.createMinionSkills(env, activeSkill)
+				GlobalCache.minionSkills[uuid] = { env = env, activeSkill = activeSkill }
 			end
-			activeSkill.minion.modDB = new("ModDB")
-			activeSkill.minion.modDB.actor = activeSkill.minion
-			calcs.createMinionSkills(env, activeSkill)
 		end
 	end
 
@@ -1866,7 +1880,7 @@ function calcs.perform(env)
 		else
 			env.player.mainSkill.skillData.triggered = true
 			local uuid = cacheSkillUUID(source)
-			local sourceAPS = GlobalCache.cachedData[uuid].Speed
+			local sourceAPS = GlobalCache.cachedData[env.mode][uuid].Speed
 			local dualWield = false
 
 			sourceAPS, dualWield = calcDualWieldImpact(env, sourceAPS, source.activeEffect.grantedEffect.name)
@@ -1875,7 +1889,7 @@ function calcs.perform(env)
 			trigRate = calcActualTriggerRate(env, source, sourceAPS, spellCount, output, breakdown, dualWield)
 
 			-- Account for chance to hit/crit
-			local sourceCritChance = GlobalCache.cachedData[uuid].CritChance
+			local sourceCritChance = GlobalCache.cachedData[env.mode][uuid].CritChance
 			trigRate = trigRate * sourceCritChance / 100
 			if breakdown then
 				breakdown.Speed = {
@@ -1916,7 +1930,7 @@ function calcs.perform(env)
 		else
 			env.player.mainSkill.skillData.triggered = true
 			local uuid = cacheSkillUUID(source)
-			local sourceAPS = GlobalCache.cachedData[uuid].Speed
+			local sourceAPS = GlobalCache.cachedData[env.mode][uuid].Speed
 			local dualWield = false
 
 			sourceAPS, dualWield = calcDualWieldImpact(env, sourceAPS, source.activeEffect.grantedEffect.name)
@@ -1925,7 +1939,7 @@ function calcs.perform(env)
 			trigRate = calcActualTriggerRate(env, source, sourceAPS, spellCount, output, breakdown, dualWield)
 
 			-- Account for chance to hit/crit
-			local sourceHitChance = GlobalCache.cachedData[uuid].HitChance
+			local sourceHitChance = GlobalCache.cachedData[env.mode][uuid].HitChance
 			trigRate = trigRate * sourceHitChance / 100
 			if breakdown then
 				breakdown.Speed = {
@@ -1966,13 +1980,13 @@ function calcs.perform(env)
 		else
 			env.player.mainSkill.skillData.triggered = true
 			local uuid = cacheSkillUUID(source)
-			local sourceAPS = GlobalCache.cachedData[uuid].Speed
+			local sourceAPS = GlobalCache.cachedData[env.mode][uuid].Speed
 
 			-- Get action trigger rate
 			trigRate = calcActualTriggerRate(env, source, sourceAPS, spellCount, output, breakdown)
 
 			-- Account for chance to hit/crit
-			local sourceCritChance = GlobalCache.cachedData[uuid].CritChance
+			local sourceCritChance = GlobalCache.cachedData[env.mode][uuid].CritChance
 			trigRate = trigRate * sourceCritChance / 100
 			trigRate = trigRate * source.skillData.chanceToTriggerOnCrit / 100
 			if breakdown then
@@ -2015,7 +2029,7 @@ function calcs.perform(env)
 		else
 			env.player.mainSkill.skillData.triggered = true
 			local uuid = cacheSkillUUID(source)
-			local sourceAPS = GlobalCache.cachedData[uuid].Speed
+			local sourceAPS = GlobalCache.cachedData[env.mode][uuid].Speed
 
 			-- Get action trigger rate
 			trigRate = calcActualTriggerRate(env, source, sourceAPS, spellCount, output, breakdown)
@@ -2225,16 +2239,12 @@ function calcs.perform(env)
 	calcs.defence(env, env.player)
 	calcs.offence(env, env.player, env.player.mainSkill)
 	local uuid = cacheSkillUUID(env.player.mainSkill)
-	if not env.dontCache then
-		cacheData(uuid, env)
-	end
+	cacheData(uuid, env)
 
 	if env.minion then
 		calcs.defence(env, env.minion)
 		calcs.offence(env, env.minion, env.minion.mainSkill)
-		uuid = cacheSkillUUID(env.player.mainSkill)
-		if not env.dontCache then
-			cacheData(uuid, env)
-		end
+		local uuid = cacheSkillUUID(env.minion.mainSkill)
+		cacheData(uuid, env)
 	end
 end
