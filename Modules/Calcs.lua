@@ -68,7 +68,10 @@ local function getCalculator(build, fullInit, modFunc)
 	initEnemyDB.multipliers = copyTable(env.enemyDB.multipliers)
 
 	-- Run base calculation pass
-	calcs.perform(env)
+	calcs.performFull(env)
+	local fullDPS = calcs.calcFullDPS(build, "CALCULATOR")
+	env.player.output.SkillDPS = fullDPS.skills
+	env.player.output.FullDPS = fullDPS.combinedDPS
 	local baseOutput = env.player.output
 
 	env.modDB.parent = initModDB
@@ -87,7 +90,12 @@ local function getCalculator(build, fullInit, modFunc)
 		modFunc(env, ...)
 		
 		-- Run calculation pass
-		calcs.perform(env)
+		calcs.performFull(env)
+		GlobalCache.dontUseCache = true
+		fullDPS = calcs.calcFullDPS(build, "CALCULATOR")
+		GlobalCache.dontUseCache = nil
+		env.player.output.SkillDPS = fullDPS.skills
+		env.player.output.FullDPS = fullDPS.combinedDPS
 
 		return env.player.output
 	end, baseOutput	
@@ -105,22 +113,21 @@ end
 function calcs.getMiscCalculator(build)
 	-- Run base calculation pass
 	local env = calcs.initEnv(build, "CALCULATOR")
-	calcs.perform(env)
-
+	calcs.performFull(env)
 	local fullDPS = calcs.calcFullDPS(build, "CALCULATOR")
-
 	env.player.output.SkillDPS = fullDPS.skills
 	env.player.output.FullDPS = fullDPS.combinedDPS
 	local baseOutput = env.player.output
 
 	return function(override)
 		env = calcs.initEnv(build, "CALCULATOR", override)
-		calcs.perform(env)
-
+		calcs.performFull(env)
+		GlobalCache.dontUseCache = true
 		fullDPS = calcs.calcFullDPS(build, "CALCULATOR", override)
-
+		GlobalCache.dontUseCache = nil
 		env.player.output.SkillDPS = fullDPS.skills
 		env.player.output.FullDPS = fullDPS.combinedDPS
+		--ConPrintf("Base: " .. tostring(baseOutput.FullDPS) .. ", Modded: " .. tostring(env.player.output.FullDPS) .. ", Diff: " .. tostring(env.player.output.FullDPS - baseOutput.FullDPS))
 		return env.player.output
 	end, baseOutput	
 end
@@ -140,7 +147,7 @@ local function getActiveSkillCount(activeSkill)
 end
 
 function calcs.calcFullDPS(build, mode, override)
-	local fullEnv = calcs.initEnv(build, mode, override or {})
+	local fullEnv = calcs.initEnv(build, mode, override)
 	local usedEnv = nil
 
 	local fullDPS = { combinedDPS = 0, skills = { }, poisonDPS = 0, impaleDPS = 0, igniteDPS = 0, bleedDPS = 0, decayDPS = 0, dotDPS = 0 }
@@ -149,15 +156,9 @@ function calcs.calcFullDPS(build, mode, override)
 	local igniteSource = ""
 	for _, activeSkill in ipairs(fullEnv.player.activeSkillList) do
 		if activeSkill.socketGroup and activeSkill.socketGroup.includeInFullDPS and not isExcludedFromFullDps(activeSkill) then
-			local uuid = cacheSkillUUID(activeSkill)
-			if GlobalCache.cachedData[uuid] and not override then
-				usedEnv = GlobalCache.cachedData[uuid].Env
-				activeSkill = usedEnv.player.mainSkill
-			else
-				fullEnv.player.mainSkill = activeSkill
-				calcs.perform(fullEnv)
-				usedEnv = fullEnv
-			end
+			fullEnv.player.mainSkill = activeSkill
+			calcs.performFull(fullEnv)
+			usedEnv = fullEnv
 			local activeSkillCount = getActiveSkillCount(activeSkill)
 			if activeSkill.minion then
 				if usedEnv.minion.output.TotalDPS and usedEnv.minion.output.TotalDPS > 0 then
@@ -260,13 +261,6 @@ function calcs.buildActiveSkill(build, mode, skill)
 		if cacheSkillUUID(activeSkill) == cacheSkillUUID(skill) then
 			fullEnv.player.mainSkill = activeSkill
 			calcs.perform(fullEnv)
-			--local uuid = cacheSkillUUID(activeSkill)
-			--ConPrintf("[Cached] " .. uuid)
-			--ConPrintf("\tName: " .. GlobalCache.cachedData[uuid].Name)
-			--ConPrintf("\tAPS: " .. tostring(GlobalCache.cachedData[uuid].Speed))
-			--ConPrintf("\tHitChance: " .. tostring(GlobalCache.cachedData[uuid].HitChance))
-			--ConPrintf("\tCritChance: " .. tostring(GlobalCache.cachedData[uuid].CritChance))
-			--ConPrintf("\n")
 			return
 		end
 	end
@@ -276,16 +270,20 @@ end
 function calcs.buildOutput(build, mode)
 	-- Build output for selected main skill
 	local env = calcs.initEnv(build, mode)
-	calcs.perform(env)
+	calcs.performFull(env)
 
 	local output = env.player.output
 
-	-- Build output across all active skills
-	local fullDPS = calcs.calcFullDPS(build, "CACHE")
+	ConPrintf("\n[buildOutput]: " .. mode .. " : " .. cacheSkillUUID(env.player.mainSkill) .. "\n")
 
 	-- Add Full DPS data to main `env`
-	env.player.output.SkillDPS = fullDPS.skills
-	env.player.output.FullDPS = fullDPS.combinedDPS
+	if mode == "MAIN" then
+		-- Build output across all active skills
+		local fullDPS = calcs.calcFullDPS(build, "MAIN")
+
+		output.SkillDPS = fullDPS.skills
+		output.FullDPS = fullDPS.combinedDPS
+	end
 
 	if mode == "MAIN" then
 		output.ExtraPoints = env.modDB:Sum("BASE", nil, "ExtraPoints")

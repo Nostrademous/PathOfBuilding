@@ -1200,6 +1200,8 @@ function calcs.offence(env, actor, activeSkill)
 			output.TriggerTime = output.Time
 			output.Speed = skillData.triggerRate
 			skillData.showAverage = false
+			skillFlags.showAverage = false
+			skillFlags.notAverage = true
 		elseif skillData.triggeredByBrand and skillData.triggered then
 			output.Time = 1 / (1 + skillModList:Sum("INC", cfg, "Speed", "BrandActivationFrequency") / 100) / skillModList:More(cfg, "BrandActivationFrequency") * (skillModList:Sum("BASE", cfg, "ArcanistSpellsLinked") or 1)
 			output.TriggerTime = output.Time
@@ -3647,13 +3649,13 @@ function calcs.offence(env, actor, activeSkill)
 		for _, triggerSkill in ipairs(actor.activeSkillList) do
 			if triggerSkill.socketGroup == activeSkill.socketGroup and triggerSkill ~= activeSkill and triggerSkill.skillData.triggeredByGeneralsCry then
 				-- Grab a fully-processed by calcs.perform() version of the skill that Mirage Warrior(s) will use
-				local uuid = cacheSkillUUID(triggerSkill)
-				if not GlobalCache.cachedData[uuid] then
+				local cachedData = getCachedData(triggerSkill, "CALCS")
+				if not cachedData then
 					calcs.buildActiveSkill(env.build, "CALCS", triggerSkill)
-					env.dontCache = true
+					cachedData = getCachedData(triggerSkill, "CALCS")
 				end
-				if GlobalCache.cachedData[uuid] then
-					usedSkill = GlobalCache.cachedData[uuid].ActiveSkill
+				if cachedData then
+					usedSkill = cachedData.ActiveSkill
 				end
 				break
 			end
@@ -3665,7 +3667,7 @@ function calcs.offence(env, actor, activeSkill)
 			local exertMore = env.modDB:Sum("MORE", usedSkill.skillCfg, "ExertIncrease")
 			local maxMirageWarriors = activeSkill.skillModList:Sum("BASE", activeSkill.skillCfg, "GeneralsCryDoubleMaxCount")
 
-			local newSkill, newEnv = calcs.copyActiveSkill(env.build, "CALCS", usedSkill)
+			local newSkill, newEnv = calcs.copyActiveSkill(env.build, "MAIN", usedSkill)
 
 			-- Add new modifiers to new skill (which already has all the old skill's modifiers)
 			newSkill.skillModList:NewMod("Damage", "MORE", moreDamage, "General's Cry", activeSkill.ModFlags, activeSkill.KeywordFlags)
@@ -3675,7 +3677,7 @@ function calcs.offence(env, actor, activeSkill)
 
 			-- Recalculate the offensive/defensive aspects of this new skill
 			newEnv.player.mainSkill = newSkill
-			calcs.perform(newEnv)
+			calcs.perform(newEnv, true)
 
 			-- Re-link over the output
 			actor.output = newEnv.player.output
@@ -3714,20 +3716,20 @@ function calcs.offence(env, actor, activeSkill)
 		for _, triggerSkill in ipairs(actor.activeSkillList) do
 			if triggerSkill ~= activeSkill and triggerSkill.skillTypes[SkillType.Attack] and band(triggerSkill.skillCfg.flags, bor(ModFlag.Sword, ModFlag.Weapon1H)) == bor(ModFlag.Sword, ModFlag.Weapon1H) then
 				-- Grab a fully-processed by calcs.perform() version of the skill that Mirage Warrior(s) will use
-				local uuid = cacheSkillUUID(triggerSkill)
-				if not GlobalCache.cachedData[uuid] then
+				local cachedData = getCachedData(triggerSkill, "CALCS")
+				if not cachedData then
 					calcs.buildActiveSkill(env.build, "CALCS", triggerSkill)
-					env.dontCache = true
+					cachedData = getCachedData(triggerSkill, "CALCS")
 				end
 				-- We found a skill and it can crit
-				if GlobalCache.cachedData[uuid] and GlobalCache.cachedData[uuid].CritChance > 0 then
+				if cachedData and cachedData.CritChance > 0 then
 					if not usedSkill then
-						usedSkill = GlobalCache.cachedData[uuid].ActiveSkill
-						usedSkillBestDps = GlobalCache.cachedData[uuid].CombinedDPS
+						usedSkill = cachedData.ActiveSkill
+						usedSkillBestDps = cachedData.CombinedDPS
 					else
-						if GlobalCache.cachedData[uuid].CombinedDPS > usedSkillBestDps then
-							usedSkill = GlobalCache.cachedData[uuid].ActiveSkill
-							usedSkillBestDps = GlobalCache.cachedData[uuid].CombinedDPS
+						if cachedData.CombinedDPS > usedSkillBestDps then
+							usedSkill = cachedData.ActiveSkill
+							usedSkillBestDps = cachedData.CombinedDPS
 						end
 					end
 				end
@@ -3738,7 +3740,7 @@ function calcs.offence(env, actor, activeSkill)
 			local moreDamage = activeSkill.skillModList:Sum("BASE", activeSkill.skillCfg, "SaviourMirageWarriorLessDamage")
 			local maxMirageWarriors = activeSkill.skillModList:Sum("BASE", activeSkill.skillCfg, "SaviourMirageWarriorMaxCount")
 
-			local newSkill, newEnv = calcs.copyActiveSkill(env.build, "CALCS", usedSkill)
+			local newSkill, newEnv = calcs.copyActiveSkill(env.build, "MAIN", usedSkill)
 
 			-- Add new modifiers to new skill (which already has all the old skill's modifiers)
 			newSkill.skillModList:NewMod("Damage", "MORE", moreDamage, "The Saviour", activeSkill.ModFlags, activeSkill.KeywordFlags)
@@ -3746,7 +3748,7 @@ function calcs.offence(env, actor, activeSkill)
 
 			-- Recalculate the offensive/defensive aspects of this new skill
 			newEnv.player.mainSkill = newSkill
-			calcs.perform(newEnv)
+			calcs.perform(newEnv, true)
 
 			-- Re-link over the output
 			actor.output = newEnv.player.output
