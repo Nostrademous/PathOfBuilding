@@ -35,59 +35,19 @@ function TradeQueryRequestsClass:ProcessQueue()
 					end
 					request.callback(response.body, errMsg, unpack(request.callbackParams or {}))
 				end
-				self:SendRequest(request.url , onComplete, {body = request.body, poesessid = POESESSID})
+				-- self:SendRequest(request.url , onComplete, {body = request.body, poesessid = POESESSID})
+				local header = "Content-Type: application/json"
+				if POESESSID and #POESESSID then
+					header = header .. "\nCookie: POESESSID=" .. POESESSID
+				end
+				launch:DownloadPage(request.url , onComplete, {
+					header = header,
+					body = request.body, 
+				})
 			else
 				break
 			end
 		end
-	end
-end
-
----@param url string
----@param callback fun(response:table, errMsg:string) @ response = { header, body }
----@param params table @ params = { body, poesessid }
-function TradeQueryRequestsClass:SendRequest(url, callback, params)
-	params = params or {}
-	local id = LaunchSubScript([[
-		local curl = require("lcurl.safe")
-		local easy = curl.easy()
-		local url, req_body, versionNumber, POESESSID = ...
-		local res_header = ""
-		local res_body = ""
-        local httpheader = {
-				'User-Agent: Path of Building/' .. versionNumber .. ' (contact: pob@mailbox.org)',
-				'Accept: application/json',
-				'Content-Type: application/json',
-			}
-        if POESESSID then
-            table.insert(httpheader, 'Cookie: POESESSID='..POESESSID)
-        end
-		if req_body then
-			easy:setopt{
-				postfields = req_body,
-				post = true,
-			}
-		end
-		easy:setopt{
-			url = url,
-			httpheader = httpheader,
-		}
-		easy:setopt_headerfunction(function(data)
-			res_header = res_header..data
-			return true
-		end)
-		easy:setopt_writefunction(function(data)
-			res_body = res_body..data
-			return true
-		end)
-		easy:perform()
-		easy:close()
-		return res_header, res_body
-	]], "", "", url, params.body, launch.versionNumber, params.poesessid)
-	if id then
-		launch:RegisterSubScript(id, function(header, body, errMsg)
-			callback({header = header, body = body}, errMsg)
-		end)
 	end
 end
 
@@ -119,7 +79,7 @@ function TradeQueryRequestsClass:PerformSearch(league, query, callback)
 		url = "https://www.pathofexile.com/api/trade/search/"..league,
 		body = query,
 		callback = function(response, errMsg)
-			if errMsg then
+			if errMsg and not errMsg:find("Response code: 400") then
 				return callback(nil, nil, errMsg)
 			end
 			local response = dkjson.decode(response)
@@ -247,13 +207,13 @@ end
 ---@see TradeQueryRequests#FetchSearchQuery
 function TradeQueryRequestsClass:FetchSearchQueryHTML(queryId, callback)
 	-- the league doesn't affect query so we set it to Standard as it doesn't change
-	self:DownloadPage("https://www.pathofexile.com/trade/search/Standard/" .. queryId, 
+	launch:DownloadPage("https://www.pathofexile.com/trade/search/Standard/" .. queryId, 
 		function(response, errMsg)
 			if errMsg then
 				return callback(nil, errMsg)
 			end
 			-- full json state obj from HTML
-			local dataStr = response:match('require%(%["main"%].+ t%((.+)%);}%);}%);')
+			local dataStr = response.body:match('require%(%["main"%].+ t%((.+)%);}%);}%);')
 			if not dataStr then
 				return callback(nil, "JSON object not found on the page.")
 			end
@@ -267,10 +227,4 @@ function TradeQueryRequestsClass:FetchSearchQueryHTML(queryId, callback)
 			local queryStr = dkjson.encode(query)
 			callback(queryStr, errMsg)
 		end)
-end
-
-function TradeQueryRequestsClass:DownloadPage(url, callback)
-	self:SendRequest(url, function(response, errMsg)
-		callback(response.body, errMsg)
-	end)
 end
