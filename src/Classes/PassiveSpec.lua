@@ -703,7 +703,7 @@ function PassiveSpecClass:BuildAllDependsAndPaths()
 					else
 						ConPrintf("Unhandled 'replace' ID: " .. conqData.ID)
 					end
-				else
+				elseif next(conqData) then
 					ConPrintf("Unhandled OP: " .. conqData.OP .. " : " .. conqData.ID)
 				end
 			elseif node.type == "Keystone" then
