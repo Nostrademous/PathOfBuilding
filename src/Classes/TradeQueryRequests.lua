@@ -37,7 +37,7 @@ function TradeQueryRequestsClass:ProcessQueue()
 				end
 				-- self:SendRequest(request.url , onComplete, {body = request.body, poesessid = POESESSID})
 				local header = "Content-Type: application/json"
-				if POESESSID and #POESESSID then
+				if POESESSID and POESESSID ~= "" then
 					header = header .. "\nCookie: POESESSID=" .. POESESSID
 				end
 				launch:DownloadPage(request.url , onComplete, {
@@ -58,14 +58,14 @@ end
 ---@param params table @ params = { callbackQueryId = fun(queryId:string) }
 function TradeQueryRequestsClass:SearchWithQuery(league, query, callback, params)
 	params = params or {}
-	self:PerformSearch(league, query, function(itemHashes, queryId, errMsg)
+	self:PerformSearch(league, query, function(response, errMsg)
 		if errMsg then
 			return callback(nil, errMsg)
 		end
 		if params.callbackQueryId then
-			params.callbackQueryId(queryId)
+			params.callbackQueryId(response.id)
 		end
-		self:FetchResults(itemHashes, queryId, callback)
+		self:FetchResults(response.result, response.id, callback)
 	end)
 end
 
@@ -73,19 +73,19 @@ end
 ---Item info has to be fetched seperately 
 ---@param league string
 ---@param query string
----@param callback fun(itemHashes:string[], queryId:string, errMsg:string)
+---@param callback fun(response:table, errMsg:string)
 function TradeQueryRequestsClass:PerformSearch(league, query, callback)
 	table.insert(self.requestQueue["search"], {
 		url = "https://www.pathofexile.com/api/trade/search/"..league,
 		body = query,
 		callback = function(response, errMsg)
 			if errMsg and not errMsg:find("Response code: 400") then
-				return callback(nil, nil, errMsg)
+				return callback(nil, errMsg)
 			end
 			local response = dkjson.decode(response)
 			if not response then
 				errMsg =  "Failed to Get Trade response"
-				return callback(nil, nil, errMsg)
+				return callback(nil, errMsg)
 			end
 			if not response.result or #response.result == 0 then
 				if response.error then
@@ -101,9 +101,9 @@ function TradeQueryRequestsClass:PerformSearch(league, query, callback)
 				else
 					errMsg = "No Matching Results Found"
 				end
-				return callback(nil, nil, errMsg)
+				return callback(nil, errMsg)
 			end
-			callback(response.result, response.id, errMsg)
+			callback(response, errMsg)
 		end,
 	})
 end
