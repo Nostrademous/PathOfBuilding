@@ -821,7 +821,6 @@ function TreeTabClass:FindTimelessJewel()
 	controls.searchList = new("EditControl", { "TOPLEFT", controls.searchListLabel, "TOPLEFT" }, 0, 25, 225, 200, "", nil, "^%C\t\n", nil, nil, 16, true)
 
 	controls.searchResultsLabel = new("LabelControl", { "TOPLEFT", controls.nodeSelectLabel, "TOPLEFT" }, 140, 25, 0, 16, "^7Search Results:")
-	--self, anchor, x, y, width, height, init, prompt, filter, limit, changeFunc, lineHeight, allowZoom
 	controls.searchResults = new("EditControl", { "TOPLEFT", controls.searchResultsLabel, "TOPLEFT" }, 0, 25, 225, 200, "", nil, "^%C\t\n", nil, nil, 16, true)
 
 	controls.search = new("ButtonControl", nil, -90, 375, 80, 20, "Search", function()
