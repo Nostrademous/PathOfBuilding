@@ -884,7 +884,7 @@ function TreeTabClass:FindTimelessJewel()
 	controls.searchResultsLabel = new("LabelControl", { "TOPLEFT", controls.nodeSelectLabel, "TOPLEFT" }, 207, 25, 0, 16, "^7Search Results:")
 	controls.searchResults = new("EditControl", { "TOPLEFT", controls.searchResultsLabel, "TOPLEFT" }, 0, 25, 225, 200, "", nil, "^%C\t\n", nil, nil, 16, true)
 
-	controls.search = new("ButtonControl", nil, -90, 375, 80, 20, "Search", function()
+	controls.search = new("ButtonControl", nil, -90, 365, 80, 20, "Search", function()
 		if treeData.nodes[jewelSocket] and treeData.nodes[jewelSocket].isJewelSocket then
 			local radiusNodes = treeData.nodes[jewelSocket].nodesInRadius[3] -- large radius around jewelSocket
 			local allocatedNodes = { }
@@ -986,12 +986,12 @@ function TreeTabClass:FindTimelessJewel()
 			controls.searchResults:SetText(t_concat(searchResults, "\n"))
 		end
 	end)
-	controls.reset = new("ButtonControl", nil, 0, 375, 80, 20, "Reset", function()
+	controls.reset = new("ButtonControl", nil, 0, 365, 80, 20, "Reset", function()
 		controls.searchList:SetText("")
 		controls.searchResults:SetText("")
 	end)
-	controls.close = new("ButtonControl", nil, 90, 375, 80, 20, "Cancel", function()
+	controls.close = new("ButtonControl", nil, 90, 365, 80, 20, "Cancel", function()
 		main:ClosePopup()
 	end)
-	main:OpenPopup(500, 405, "Find a Timeless Jewel", controls, "search")
+	main:OpenPopup(500, 402, "Find a Timeless Jewel", controls, "search")
 end
