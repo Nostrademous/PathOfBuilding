@@ -751,13 +751,13 @@ function TreeTabClass:FindTimelessJewel()
 	local nodeData = { }
 	local smallAdditions = { "Strength", "Dex", "Devotion" }
 	local jewelTypes = {
-		{ label = "Lethal Pride", id = "karui" },
-		{ label = "Brutal Restraint", id = "maraketh" },
-		{ label = "Militant Faith", id = "templar" },
-		{ label = "Glorious Vanity", id = "vaal" },
-		{ label = "Elegant Hubris", id = "eternal" }
+		{ label = "Lethal Pride", name = "karui", id = 1 },
+		{ label = "Brutal Restraint", name = "maraketh", id = 2 },
+		{ label = "Militant Faith", name = "templar", id = 3 },
+		{ label = "Glorious Vanity", name = "vaal", id = 4 },
+		{ label = "Elegant Hubris", name = "eternal", id = 5 }
 	}
-	local jewelType = jewelTypes[1].id
+	local jewelType = jewelTypes[1]
 	local jewelSockets = {	}
 	for k, v in pairs(self.build.spec.nodes) do
 		if v.isJewelSocket then
@@ -817,22 +817,22 @@ function TreeTabClass:FindTimelessJewel()
 	local function buildMods()
 		wipeTable(nodeData)
 		for _, node in pairs(self.build.spec.tree.legion.nodes) do
-			if node.id:match("^" .. jewelType .. "_.+") and not node.ks then
+			if node.id:match("^" .. jewelType.name .. "_.+") and not node.ks then
 				t_insert(nodeData, {
 					label = node.dn,
 					descriptions = copyTable(node.sd),
-					type = jewelType,
+					type = jewelType.name,
 					id = node.id,
 				})
 			end
 		end
 		for _, addition in pairs(self.build.spec.tree.legion.additions) do
 			-- exclude passives that are already added (vaal, attributes, devotion)
-			if addition.id:match("^" .. jewelType .. "_.+") and not isValueInArray(smallAdditions, addition.dn) and jewelType ~= "vaal" then
+			if addition.id:match("^" .. jewelType.name .. "_.+") and not isValueInArray(smallAdditions, addition.dn) and jewelType.name ~= "vaal" then
 				t_insert(nodeData, {
 					label = addition.dn,
 					descriptions = copyTable(addition.sd),
-					type = jewelType,
+					type = jewelType.name,
 					id = addition.id,
 				})
 			end
@@ -842,7 +842,7 @@ function TreeTabClass:FindTimelessJewel()
 
 	controls.jewelSelectLabel = new("LabelControl", { "TOPRIGHT", nil, "TOPLEFT" }, 125, 25, 0, 16, "^7Jewel Type:")
 	controls.jewelSelect = new("DropDownControl", { "LEFT", controls.jewelSelectLabel, "RIGHT" }, 43, 0, 280, 18, jewelTypes, function(index, value)
-		jewelType = value.id
+		jewelType = value
 		buildMods()
 	end)
 
@@ -874,10 +874,10 @@ function TreeTabClass:FindTimelessJewel()
 		end
 	end
 
-	controls.searchListLabel = new("LabelControl", { "TOPLEFT", controls.nodeSelectLabel, "TOPLEFT" }, -35, 25, 0, 16, "^7Desired Nodes:")
+	controls.searchListLabel = new("LabelControl", { "TOPLEFT", controls.nodeSelectLabel, "TOPLEFT" }, -34, 25, 0, 16, "^7Desired Nodes:")
 	controls.searchList = new("EditControl", { "TOPLEFT", controls.searchListLabel, "TOPLEFT" }, 0, 25, 225, 200, "", nil, "^%C\t\n", nil, nil, 16, true)
 
-	controls.searchResultsLabel = new("LabelControl", { "TOPLEFT", controls.nodeSelectLabel, "TOPLEFT" }, 205, 25, 0, 16, "^7Search Results:")
+	controls.searchResultsLabel = new("LabelControl", { "TOPLEFT", controls.nodeSelectLabel, "TOPLEFT" }, 207, 25, 0, 16, "^7Search Results:")
 	controls.searchResults = new("EditControl", { "TOPLEFT", controls.searchResultsLabel, "TOPLEFT" }, 0, 25, 225, 200, "", nil, "^%C\t\n", nil, nil, 16, true)
 
 	controls.search = new("ButtonControl", nil, -90, 375, 80, 20, "Search", function()
@@ -908,7 +908,21 @@ function TreeTabClass:FindTimelessJewel()
 			for desiredNode in controls.searchList.buf:gmatch("[^\r\n]+") do
 				t_insert(desiredNodes, desiredNode)
 			end
-			-- TODO: search LUT for seeds with desiredNode matching against targetNodes
+			-- loop over every targetNode
+			-- loop over every  validSeed
+			-- check if it's a replacement or addition (???)
+			-- compare resultingNode to desiredNodes
+			-- if it's a match, store that +1 match on validSeed somewhere
+			-- once all loops finish, controls.searchResults:SetText(...)
+			for targetNode in pairs(targetNodes) do
+				for curSeed = data.timelessJewelSeedMin[jewelType.id], data.timelessJewelSeedMax[jewelType.id] do
+					--[[local jewelDataTbl = data.readLUT(curSeed, targetNode, jewelType.id)
+					if not next(jewelDataTbl) then
+						ConPrintf("Missing LUT: " .. data.timelessJewelTypes[jewelType])
+					else
+					end]]
+				end
+			end
 		end
 	end)
 	controls.reset = new("ButtonControl", nil, 0, 375, 80, 20, "Reset", function()

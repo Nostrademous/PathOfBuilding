@@ -691,14 +691,14 @@ function PassiveSpecClass:BuildAllDependsAndPaths()
 
 			if node.type == "Notable" then
 				local jewelDataTbl = { }
-				if seed ~= m_max(m_min(seed, data.ConqSeedMax[jewelType]), data.ConqSeedMin[jewelType]) then
-					ConPrintf("ERROR: Seed " .. seed .. " is outside of valid range [" .. data.ConqSeedMin[jewelType] .. " - " .. data.ConqSeedMax[jewelType] .. "] for jewel type: " .. data.ConqTypeIds[jewelType])
+				if seed ~= m_max(m_min(seed, data.timelessJewelSeedMax[jewelType]), data.timelessJewelSeedMin[jewelType]) then
+					ConPrintf("ERROR: Seed " .. seed .. " is outside of valid range [" .. data.timelessJewelSeedMin[jewelType] .. " - " .. data.timelessJewelSeedMax[jewelType] .. "] for jewel type: " .. data.timelessJewelTypes[jewelType])
 				else
 					jewelDataTbl = data.readLUT(conqueredBy.id, node.id, jewelType)
 				end
 				print("Need to Update: " .. node.id .. " [" .. node.dn .. "]")
 				if not next(jewelDataTbl) then
-					ConPrintf("Missing LUT: " .. data.ConqTypeIds[jewelType])
+					ConPrintf("Missing LUT: " .. data.timelessJewelTypes[jewelType])
 				else
 					if jewelType == 1 then
 						local headerSize = #jewelDataTbl
