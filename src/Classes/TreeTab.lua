@@ -747,18 +747,21 @@ function TreeTabClass:BuildPowerReportList(currentStat)
 end
 
 function TreeTabClass:FindTimelessJewel()
+	local treeData = self.build.spec.tree
+	local legionNodes = treeData.legion.nodes
+	local legionAdditions = treeData.legion.additions
 	local controls = { }
-	local nodeData = { }
+	local modData = { }
 	local smallAdditions = { "Strength", "Dex", "Devotion" }
 	local jewelTypes = {
-		{ label = "Lethal Pride", name = "karui", id = 1 },
-		{ label = "Brutal Restraint", name = "maraketh", id = 2 },
-		{ label = "Militant Faith", name = "templar", id = 3 },
-		{ label = "Glorious Vanity", name = "vaal", id = 4 },
+		{ label = "Glorious Vanity", name = "vaal", id = 1 },
+		{ label = "Lethal Pride", name = "karui", id = 2 },
+		{ label = "Brutal Restraint", name = "maraketh", id = 3 },
+		{ label = "Militant Faith", name = "templar", id = 4 },
 		{ label = "Elegant Hubris", name = "eternal", id = 5 }
 	}
 	local jewelType = jewelTypes[1]
-	local jewelSockets = {	}
+	local jewelSockets = { }
 	for k, v in pairs(self.build.spec.nodes) do
 		if v.isJewelSocket then
 			local label = "Unknown: " .. k
@@ -781,25 +784,25 @@ function TreeTabClass:FindTimelessJewel()
 			elseif k == 33631 then
 				label = "Eternal Youth: " .. k
 			elseif k == 7960 then
-				label = "Cluster, near Zealot's Oath: " .. k
+				label = "Zealot's Oath: " .. k
 			elseif k == 21984 then
-				label = "Cluster, near Chaos Innoculation: " .. k
+				label = "Chaos Innoculation: " .. k
 			elseif k == 32763 then
-				label = "Cluster, near Perfect Agony: " .. k
+				label = "Perfect Agony: " .. k
 			elseif k == 46882 then
-				label = "Cluster, near Point Blank: " .. k
+				label = "Point Blank: " .. k
 			elseif k == 2491 then
-				label = "Cluster, near Call to Arms: " .. k
+				label = "Call to Arms: " .. k
 			elseif k == 55190 then
-				label = "Cluster, near Resolute Technique: " .. k
+				label = "Resolute Technique: " .. k
 			elseif k == 26196 then
-				label = "Templar, near The Agnostic: " .. k
+				label = "The Agnostic: " .. k
 			elseif k == 61419 then
-				label = "Witch, near Doomsday: " .. k
+				label = "Doomsday: " .. k
 			elseif k == 61834 then
-				label = "Shadow, near Ghost Dance: " .. k
+				label = "Ghost Dance: " .. k
 			elseif k == 60735 then
-				label = "Ranger, near Acrobatics: " .. k
+				label = "Acrobatics: " .. k
 			elseif k == 54127 then
 				label = "Duelist, near Iron Reflexes: " .. k
 			elseif k == 26725 then
@@ -812,13 +815,14 @@ function TreeTabClass:FindTimelessJewel()
 			})
 		end
 	end
+	t_sort(jewelSockets, function(a, b) return a.label < b.label end)
 	local jewelSocket = jewelSockets[1].id
 
 	local function buildMods()
-		wipeTable(nodeData)
-		for _, node in pairs(self.build.spec.tree.legion.nodes) do
-			if node.id:match("^" .. jewelType.name .. "_.+") and not node.ks then
-				t_insert(nodeData, {
+		wipeTable(modData)
+		for _, node in pairs(legionNodes) do
+			if node.id:match("^" .. jewelType.name .. "_.+") and node["not"] and not node.ks then
+				t_insert(modData, {
 					label = node.dn,
 					descriptions = copyTable(node.sd),
 					type = jewelType.name,
@@ -826,10 +830,10 @@ function TreeTabClass:FindTimelessJewel()
 				})
 			end
 		end
-		for _, addition in pairs(self.build.spec.tree.legion.additions) do
+		for _, addition in pairs(legionAdditions) do
 			-- exclude passives that are already added (vaal, attributes, devotion)
 			if addition.id:match("^" .. jewelType.name .. "_.+") and not isValueInArray(smallAdditions, addition.dn) and jewelType.name ~= "vaal" then
-				t_insert(nodeData, {
+				t_insert(modData, {
 					label = addition.dn,
 					descriptions = copyTable(addition.sd),
 					type = jewelType.name,
@@ -837,7 +841,7 @@ function TreeTabClass:FindTimelessJewel()
 				})
 			end
 		end
-		table.sort(nodeData, function(a, b) return a.label < b.label end)
+		t_sort(modData, function(a, b) return a.label < b.label end)
 	end
 
 	controls.jewelSelectLabel = new("LabelControl", { "TOPRIGHT", nil, "TOPLEFT" }, 125, 25, 0, 16, "^7Jewel Type:")
@@ -861,7 +865,7 @@ function TreeTabClass:FindTimelessJewel()
 
 	buildMods()
 	controls.nodeSelectLabel = new("LabelControl", { "TOPLEFT", controls.socketFilterLabel, "TOPLEFT" }, 0, 25, 0, 16, "^7Search for Node:")
-	controls.nodeSelect = new("DropDownControl", { "LEFT", controls.nodeSelectLabel, "RIGHT" }, 10, 0, 280, 18, nodeData, function(index, value)
+	controls.nodeSelect = new("DropDownControl", { "LEFT", controls.nodeSelectLabel, "RIGHT" }, 10, 0, 280, 18, modData, function(index, value)
 		controls.searchList.caret = #controls.searchList.buf + 1
 		controls.searchList:Insert((#controls.searchList.buf > 0 and "\n" or "") .. value.id)
 	end)
@@ -881,11 +885,12 @@ function TreeTabClass:FindTimelessJewel()
 	controls.searchResults = new("EditControl", { "TOPLEFT", controls.searchResultsLabel, "TOPLEFT" }, 0, 25, 225, 200, "", nil, "^%C\t\n", nil, nil, 16, true)
 
 	controls.search = new("ButtonControl", nil, -90, 375, 80, 20, "Search", function()
-		if self.build.spec.nodes[jewelSocket] and self.build.spec.nodes[jewelSocket].isJewelSocket then
-			local radiusNodes = self.build.spec.tree.nodes[jewelSocket].nodesInRadius[3] -- large radius around jewelSocket
+		if treeData.nodes[jewelSocket] and treeData.nodes[jewelSocket].isJewelSocket then
+			local radiusNodes = treeData.nodes[jewelSocket].nodesInRadius[3] -- large radius around jewelSocket
 			local allocatedNodes = { }
 			local targetNodes = { }
 			local desiredNodes = { }
+			local seedMatchData = { }
 			if controls.socketFilter.state then
 				for nodeId in pairs(radiusNodes) do
 					if self.build.calcsTab.mainEnv.grantedPassives[nodeId] then
@@ -901,28 +906,84 @@ function TreeTabClass:FindTimelessJewel()
 				end
 			end
 			for nodeId in pairs(radiusNodes) do
-				if not controls.socketFilter.state or allocatedNodes[nodeId] then
+				if treeData.nodes[nodeId].isNotable
+				and not treeData.nodes[nodeId].isJewelSocket
+				and not treeData.nodes[nodeId].isKeystone
+				and (not controls.socketFilter.state or allocatedNodes[nodeId]) then
 					targetNodes[nodeId] = true
 				end
 			end
 			for desiredNode in controls.searchList.buf:gmatch("[^\r\n]+") do
-				t_insert(desiredNodes, desiredNode)
+				desiredNodes[desiredNode] = true
 			end
-			-- loop over every targetNode
-			-- loop over every  validSeed
-			-- check if it's a replacement or addition (???)
-			-- compare resultingNode to desiredNodes
-			-- if it's a match, store that +1 match on validSeed somewhere
-			-- once all loops finish, controls.searchResults:SetText(...)
-			for targetNode in pairs(targetNodes) do
-				for curSeed = data.timelessJewelSeedMin[jewelType.id], data.timelessJewelSeedMax[jewelType.id] do
-					--[[local jewelDataTbl = data.readLUT(curSeed, targetNode, jewelType.id)
+			local seedMatchDataLength = 0
+			for curSeed = data.timelessJewelSeedMin[jewelType.id], data.timelessJewelSeedMax[jewelType.id] do
+				seedMatchData[curSeed] = { }
+				for targetNode in pairs(targetNodes) do
+					local jewelDataTbl = data.readLUT(curSeed, targetNode, jewelType.id)
 					if not next(jewelDataTbl) then
-						ConPrintf("Missing LUT: " .. data.timelessJewelTypes[jewelType])
+						ConPrintf("Missing LUT: " .. jewelType.label)
 					else
-					end]]
+						for _, jewelData in ipairs(jewelDataTbl) do
+							local nodeId = nil
+							if jewelData == 294 then -- no OP
+							elseif jewelData >= 94 then -- replace
+								nodeId = legionNodes[jewelData - 94].id
+							else -- add
+								nodeId = legionAdditions[jewelData].id
+							end
+							if nodeId and desiredNodes[nodeId] then
+								seedMatchData[curSeed][nodeId] = (seedMatchData[curSeed][nodeId] or 0) + 1
+								seedMatchData[curSeed].matchTotal = (seedMatchData[curSeed].matchTotal or 0) + 1
+								if seedMatchData[curSeed].matchTotal == 1 then
+									seedMatchDataLength = seedMatchDataLength + 1
+								end
+							end
+						end
+						if next(targetNodes, targetNode) == nil then
+							-- arbritary limit to avoid running out of memory
+							if seedMatchDataLength > 200 then
+								local lowestMatchTotal = math.huge
+								for seedId, seedData in pairs(seedMatchData) do
+									if seedData.matchTotal then
+										lowestMatchTotal = m_min(seedData.matchTotal, lowestMatchTotal)
+									end
+								end
+								if lowestMatchTotal ~= math.huge then
+									for seedId, seedData in pairs(seedMatchData) do
+										if seedData.matchTotal and seedData.matchTotal <= lowestMatchTotal then
+											seedMatchData[seedId] = nil
+											seedMatchDataLength = seedMatchDataLength - 1
+										end
+									end
+								end
+							end
+						end
+					end
 				end
 			end
+			local searchResults = { }
+			local searchResultsIdx = 1
+			for seedMatch, seedData in pairs(seedMatchData) do
+				if seedData.matchTotal then
+					searchResults[searchResultsIdx] = { }
+					searchResults[searchResultsIdx].textOutput = "Seed " .. seedMatch .. ": "
+					for desiredNode in pairs(desiredNodes) do
+						if seedData[desiredNode] then
+							searchResults[searchResultsIdx].textOutput = searchResults[searchResultsIdx].textOutput .. " " .. seedData[desiredNode]
+						else
+							searchResults[searchResultsIdx].textOutput = searchResults[searchResultsIdx].textOutput .. " 0"
+						end
+					end
+					searchResults[searchResultsIdx].matchTotal = seedData.matchTotal
+					searchResultsIdx = searchResultsIdx + 1
+				end
+			end
+			t_sort(searchResults, function(a, b) return a.matchTotal > b.matchTotal end)
+			for resultIdx in ipairs(searchResults) do
+				searchResults[resultIdx] = searchResults[resultIdx].textOutput
+			end
+			controls.searchResults:SetText(t_concat(searchResults, "\n"))
 		end
 	end)
 	controls.reset = new("ButtonControl", nil, 0, 375, 80, 20, "Reset", function()
