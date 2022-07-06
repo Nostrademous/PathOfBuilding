@@ -6,14 +6,6 @@
 
 local m_random = math.random
 
-local function randomSkipLegacy(lower, upper)
-	local rand = m_random(lower, upper)
-	if rand == upper then
-		return rand + 1
-	end
-	return rand
-end
-
 local TimelessJewelListControlClass = newClass("TimelessJewelListControl", "ListControl", function(self, anchor, x, y, width, height, list, build)
 	self.list = list or { }
 	self.ListControl(anchor, x, y, width, height, 16, true, false, self.list)
