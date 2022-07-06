@@ -38,17 +38,17 @@ end
 
 function TimelessJewelListControlClass:OnSelClick(index, data, doubleClick)
 	if doubleClick then
+		local variant = m_random(1, 3)
 		local itemData = [[
 Elegant Hubris
 Timeless Jewel
 League: Legion
-Source: Drops from Eternal Legion
 Requires Level: 20
-Limited to: 1 Historic
+Limited to: 1
 Variant: Cadiro
 Variant: Victario
 Variant: Caspiro
-Selected Variant:  ]] .. m_random(1, 3) .. [[
+Selected Variant:  ]] .. variant .. "\n" .. [[
 Radius: Large
 Implicits: 0
 {variant:1}Commissioned ]] .. data.seed .. [[ coins to commemorate Cadiro
@@ -62,13 +62,12 @@ Historic
 Glorious Vanity
 Timeless Jewel
 League: Legion
-Source: Drops from Vaal Legion
 Requires Level: 20
-Limited to: 1 Historic
+Limited to: 1
 Variant: Doryani
 Variant: Xibaqua
 Variant: Ahuana
-Selected Variant: ]] .. m_random(1, 3) .. [[
+Selected Variant: ]] .. variant .. "\n" .. [[
 Radius: Large
 Implicits: 0
 {variant:1}Bathed in the blood of ]] .. data.seed .. [[ sacrificed in the name of Doryani
@@ -82,13 +81,12 @@ Historic
 Lethal Pride
 Timeless Jewel
 League: Legion
-Source: Drops from Karui Legion
 Requires Level: 20
-Limited to: 1 Historic
+Limited to: 1
 Variant: Kaom
 Variant: Rakiata
 Variant: Akoya
-Selected Variant: ]] .. m_random(1, 3) .. [[
+Selected Variant: ]] .. variant .. "\n" .. [[
 Radius: Large
 Implicits: 0
 {variant:1}Commanded leadership over ]] .. data.seed .. [[ warriors under Kaom
@@ -102,13 +100,12 @@ Historic
 Brutal Restraint
 Timeless Jewel
 League: Legion
-Source: Drops from Maraketh Legion
 Requires Level: 20
-Limited to: 1 Historic
+Limited to: 1
 Variant: Asenath
 Variant: Nasima
 Variant: Balbala
-Selected Variant: ]] .. m_random(1, 3) .. [[
+Selected Variant: ]] .. variant .. "\n" .. [[
 Radius: Large
 Implicits: 0
 {variant:1}Denoted service of ]] .. data.seed .. [[ dekhara in the akhara of Asenath
@@ -118,13 +115,17 @@ Passives in radius are Conquered by the Maraketh
 Historic
 ]]
 		elseif data.type == 4 then
+			local altVariant = m_random(4, 17)
+			local altVariant2 = m_random(4, 17)
+			if altVariant == altVariant2 then
+				altVariant = altVariant + 1
+			end
 			itemData = [[
 Militant Faith
 Timeless Jewel
 League: Legion
-Source: Drops from Templar Legion
 Requires Level: 20
-Limited to: 1 Historic
+Limited to: 1
 Has Alt Variant: true
 Has Alt Variant Two: true
 Variant: Avarius
@@ -145,9 +146,9 @@ Variant: Mana Regen
 Variant: Skill Cost
 Variant: Non-Curse Aura Effect
 Variant: Defences from Shield
-Selected Variant: ]] .. m_random(1, 3) .. [[
-Selected Alt Variant: ]] .. m_random(4, 18) .. [[
-Selected Alt Variant Two: ]] .. m_random(4, 18) .. [[
+Selected Variant: ]] .. variant .. "\n" .. [[
+Selected Alt Variant: ]] .. altVariant .. "\n" .. [[
+Selected Alt Variant Two: ]] .. altVariant2 .. "\n" .. [[
 Radius: Large
 Implicits: 0
 {variant:1}Carved to glorify ]] .. data.seed .. [[ new faithful converted by High Templar Avarius
@@ -172,7 +173,7 @@ Passives in radius are Conquered by the Templars
 Historic
 ]]
 		end
-		item = new("Item", itemData)
+		local item = new("Item", itemData)
 		self.build.itemsTab:AddItem(item, true)
 		self.build.itemsTab:PopulateSlots()
 	end
