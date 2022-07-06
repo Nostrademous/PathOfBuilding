@@ -79,17 +79,17 @@ local TreeTabClass = newClass("TreeTab", "ControlHost", function(self, build)
 			end
 		end
 	end
-	self.controls.compareCheck = new("CheckBoxControl", {"LEFT",self.controls.specSelect,"RIGHT"}, 74, 0, 20, "Compare:", function(state)
+	self.controls.compareCheck = new("CheckBoxControl", { "LEFT", self.controls.specSelect, "RIGHT" }, 74, 0, 20, "Compare:", function(state)
 		self.isComparing = state
 		self:SetCompareSpec(self.activeCompareSpec)
 		self.controls.compareSelect.shown = state
 		if state then
-			self.controls.reset:SetAnchor("LEFT",self.controls.compareSelect,"RIGHT",nil,nil,nil)
+			self.controls.reset:SetAnchor("LEFT", self.controls.compareSelect, "RIGHT", nil, nil, nil)
 		else
-			self.controls.reset:SetAnchor("LEFT",self.controls.compareCheck,"RIGHT",nil,nil,nil)
+			self.controls.reset:SetAnchor("LEFT", self.controls.compareCheck, "RIGHT", nil, nil, nil)
 		end
 	end)
-	self.controls.compareSelect = new("DropDownControl", {"LEFT",self.controls.compareCheck,"RIGHT"}, 8, 0, 190, 20, nil, function(index, value)
+	self.controls.compareSelect = new("DropDownControl", { "LEFT", self.controls.compareCheck, "RIGHT" }, 8, 0, 190, 20, nil, function(index, value)
 		if self.specList[index] then
 			self:SetCompareSpec(index)
 		end
@@ -98,7 +98,7 @@ local TreeTabClass = newClass("TreeTab", "ControlHost", function(self, build)
 	self.controls.compareSelect.maxDroppedWidth = 1000
 	self.controls.compareSelect.enableDroppedWidth = true
 	self.controls.compareSelect.enableChangeBoxWidth = true
-	self.controls.reset = new("ButtonControl", {"LEFT",self.controls.compareCheck,"RIGHT"}, 8, 0, 60, 20, "Reset", function()
+	self.controls.reset = new("ButtonControl", { "LEFT", self.controls.compareCheck, "RIGHT" }, 8, 0, 60, 20, "Reset", function()
 		main:OpenConfirmPopup("Reset Tree", "Are you sure you want to reset your passive tree?", "Reset", function()
 			self.build.spec:ResetNodes()
 			self.build.spec:BuildAllDependsAndPaths()
@@ -106,21 +106,24 @@ local TreeTabClass = newClass("TreeTab", "ControlHost", function(self, build)
 			self.build.buildFlag = true
 		end)
 	end)
-	self.controls.import = new("ButtonControl", {"LEFT",self.controls.reset,"RIGHT"}, 8, 0, 90, 20, "Import Tree", function()
+	self.controls.import = new("ButtonControl", { "LEFT", self.controls.reset, "RIGHT" }, 8, 0, 90, 20, "Import Tree", function()
 		self:OpenImportPopup()
 	end)
-	self.controls.export = new("ButtonControl", {"LEFT",self.controls.import,"RIGHT"}, 8, 0, 90, 20, "Export Tree", function()
+	self.controls.export = new("ButtonControl", { "LEFT", self.controls.import, "RIGHT" }, 8, 0, 90, 20, "Export Tree", function()
 		self:OpenExportPopup()
 	end)
-	self.controls.treeSearch = new("EditControl", {"LEFT",self.controls.export,"RIGHT"}, 8, 0, main.portraitMode and 200 or 300, 20, "", "Search", "%c%(%)", 100, function(buf)
+	self.controls.treeSearch = new("EditControl", { "LEFT", self.controls.export, "RIGHT" }, 8, 0, main.portraitMode and 200 or 300, 20, "", "Search", "%c%(%)", 100, function(buf)
 		self.viewer.searchStr = buf
 	end)
-  self.controls.treeSearch.tooltipText = "Uses Lua pattern matching for complex searches"
-	self.controls.treeHeatMap = new("CheckBoxControl", {"LEFT",self.controls.treeSearch,"RIGHT"}, 130, 0, 20, "Show Node Power:", function(state)
+	self.controls.treeSearch.tooltipText = "Uses Lua pattern matching for complex searches"
+	self.controls.findTimelessJewel = new("ButtonControl", { "LEFT", self.controls.treeSearch, "RIGHT" }, 8, 0, 150, 20, "Find Timeless Jewel", function()
+		self:FindTimelessJewel()
+	end)
+	self.controls.treeHeatMap = new("CheckBoxControl", { "LEFT", self.controls.findTimelessJewel, "RIGHT" }, 130, 0, 20, "Show Node Power:", function(state)
 		self.viewer.showHeatMap = state
 		self.controls.treeHeatMapStatSelect.shown = state
 	end)
-	self.controls.treeHeatMapStatSelect = new("DropDownControl", {"LEFT",self.controls.treeHeatMap,"RIGHT"}, 8, 0, 150, 20, nil, function(index, value)
+	self.controls.treeHeatMapStatSelect = new("DropDownControl", { "LEFT", self.controls.treeHeatMap, "RIGHT" }, 8, 0, 150, 20, nil, function(index, value)
 		self:SetPowerCalc(value)
 	end)
 	self.controls.treeHeatMap.tooltipText = function()
@@ -150,10 +153,6 @@ local TreeTabClass = newClass("TreeTab", "ControlHost", function(self, build)
 		end
 	end
 	self.showPowerReport = false
-
-	self.controls.findTimelessJewel = new("ButtonControl", { "LEFT", self.controls.powerReport, "RIGHT" }, 8, 0, 150, 20, "Find Timeless Jewel", function()
-		self:FindTimelessJewel()
-	end)
 
 	self.controls.specConvertText = new("LabelControl", { "BOTTOMLEFT", self.controls.specSelect, "TOPLEFT" }, 0, -14, 0, 16, "^7This is an older tree version, which may not be fully compatible with the current game version.")
 	self.controls.specConvertText.shown = function()
