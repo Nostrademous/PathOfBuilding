@@ -753,6 +753,7 @@ function TreeTabClass:FindTimelessJewel()
 	local controls = { }
 	local modData = { }
 	local smallAdditions = { "Strength", "Dex", "Devotion" }
+	local searchResults = { }
 	local jewelTypes = {
 		{ label = "Glorious Vanity", name = "vaal", id = 1 },
 		{ label = "Lethal Pride", name = "karui", id = 2 },
@@ -809,6 +810,9 @@ function TreeTabClass:FindTimelessJewel()
 				label = "Marauder, above Blood Magic: " .. k
 			end
 
+			if self.build.spec.allocNodes[k] then
+				label = "# " .. label
+			end
 			t_insert(jewelSockets, {
 				label = label,
 				id = k,
@@ -882,7 +886,7 @@ function TreeTabClass:FindTimelessJewel()
 	controls.searchList = new("EditControl", { "TOPLEFT", controls.searchListLabel, "TOPLEFT" }, 0, 25, 225, 200, "", nil, "^%C\t\n", nil, nil, 16, true)
 
 	controls.searchResultsLabel = new("LabelControl", { "TOPLEFT", controls.nodeSelectLabel, "TOPLEFT" }, 207, 25, 0, 16, "^7Search Results:")
-	controls.searchResults = new("EditControl", { "TOPLEFT", controls.searchResultsLabel, "TOPLEFT" }, 0, 25, 225, 200, "", nil, "^%C\t\n", nil, nil, 16, true)
+	controls.searchResults = new("TimelessJewelListControl", { "TOPLEFT", controls.searchResultsLabel, "TOPLEFT" }, 0, 25, 225, 200, searchResults, self.build)
 
 	controls.search = new("ButtonControl", nil, -90, 365, 80, 20, "Search", function()
 		if treeData.nodes[jewelSocket] and treeData.nodes[jewelSocket].isJewelSocket then
@@ -893,16 +897,7 @@ function TreeTabClass:FindTimelessJewel()
 			local seedMatchData = { }
 			if controls.socketFilter.state then
 				for nodeId in pairs(radiusNodes) do
-					if self.build.calcsTab.mainEnv.grantedPassives[nodeId] then
-						allocatedNodes[nodeId] = true
-					else
-						for allocNodeId in pairs(self.build.spec.allocNodes) do
-							if nodeId == allocNodeId then
-								allocatedNodes[nodeId] = true
-								break
-							end
-						end
-					end
+					allocatedNodes[nodeId] = self.build.calcsTab.mainEnv.grantedPassives[nodeId] or self.build.spec.allocNodes[nodeId]
 				end
 			end
 			for nodeId in pairs(radiusNodes) do
@@ -962,33 +957,36 @@ function TreeTabClass:FindTimelessJewel()
 					end
 				end
 			end
-			local searchResults = { }
+			wipeTable(searchResults)
 			local searchResultsIdx = 1
 			for seedMatch, seedData in pairs(seedMatchData) do
 				if seedData.matchTotal then
 					searchResults[searchResultsIdx] = { }
-					searchResults[searchResultsIdx].textOutput = "Seed " .. seedMatch .. ": "
+					searchResults[searchResultsIdx].label = "Seed " .. seedMatch .. ": "
 					for desiredNode in pairs(desiredNodes) do
 						if seedData[desiredNode] then
-							searchResults[searchResultsIdx].textOutput = searchResults[searchResultsIdx].textOutput .. " " .. seedData[desiredNode]
+							searchResults[searchResultsIdx].label = searchResults[searchResultsIdx].label .. " " .. seedData[desiredNode]
 						else
-							searchResults[searchResultsIdx].textOutput = searchResults[searchResultsIdx].textOutput .. " 0"
+							searchResults[searchResultsIdx].label = searchResults[searchResultsIdx].label .. " 0"
 						end
 					end
-					searchResults[searchResultsIdx].matchTotal = seedData.matchTotal
+					searchResults[searchResultsIdx].type = jewelType.id
+					searchResults[searchResultsIdx].socket = jewelSocket
+					searchResults[searchResultsIdx].seed = seedMatch
+					searchResults[searchResultsIdx].total = seedData.matchTotal
 					searchResultsIdx = searchResultsIdx + 1
 				end
 			end
-			t_sort(searchResults, function(a, b) return a.matchTotal > b.matchTotal end)
-			for resultIdx in ipairs(searchResults) do
-				searchResults[resultIdx] = searchResults[resultIdx].textOutput
-			end
-			controls.searchResults:SetText(t_concat(searchResults, "\n"))
+			t_sort(searchResults, function(a, b) return a.total > b.total end)
+			--[[for resultIdx in ipairs(searchResults) do
+				searchResults[resultIdx] = searchResults[resultIdx].label
+			end]]
 		end
 	end)
 	controls.reset = new("ButtonControl", nil, 0, 365, 80, 20, "Reset", function()
 		controls.searchList:SetText("")
-		controls.searchResults:SetText("")
+		wipeTable(searchResults)
+		--controls.searchResults:SetText("")
 	end)
 	controls.close = new("ButtonControl", nil, 90, 365, 80, 20, "Cancel", function()
 		main:ClosePopup()
