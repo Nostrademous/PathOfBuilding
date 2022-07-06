@@ -977,9 +977,6 @@ function TreeTabClass:FindTimelessJewel()
 				end
 			end
 			t_sort(searchResults, function(a, b) return a.total > b.total end)
-			--[[for resultIdx in ipairs(searchResults) do
-				searchResults[resultIdx] = searchResults[resultIdx].label
-			end]]
 		end
 	end)
 	controls.reset = new("ButtonControl", nil, 0, 365, 80, 20, "Reset", function()
