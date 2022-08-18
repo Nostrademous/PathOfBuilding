@@ -229,7 +229,7 @@ function TradeQueryRequestsClass:FetchSearchQueryHTML(queryId, callback)
 				query.sort = {}
 				query.sort["statgroup.0"] = "desc"
 			else
-				query.sort = { price = "asc "}
+				query.sort = { price = "asc"}
 			end
 			query.query.status = { option = query.query.status} -- works either way?
 			local queryStr = dkjson.encode(query)
