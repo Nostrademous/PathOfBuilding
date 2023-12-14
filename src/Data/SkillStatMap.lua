@@ -294,6 +294,10 @@ return {
 ["skill_cannot_gain_repeat_bonuses"] = {
 	flag("NoRepeatBonuses"),
 },
+["modifiers_to_projectile_count_do_not_apply"] = {
+	flag("NoAdditionalProjectiles"),
+},
+
 
 --
 -- Defensive modifiers
